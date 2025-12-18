@@ -3,45 +3,54 @@
 
     function startPlugin() {
         if (window.Lampa) {
-            console.log('Downloader plugin v1.1:', 'Loaded');
-            Lampa.Noty.show('Downloader plugin v1.1 loaded!');
+            try {
+                console.log('Downloader plugin v1.2:', 'Loaded');
+                Lampa.Noty.show('Downloader plugin v1.2 loaded!');
 
-            // Сохраняем оригинальную функцию вызова контекстного меню
-            var original_show = Lampa.ContextMenu.show;
+                // Сохраняем оригинальную функцию
+                var original_show = Lampa.ContextMenu.show;
 
-            // Переопределяем функцию
-            Lampa.ContextMenu.show = function (params) {
-                var item = params.item || {};
-                
-                // Проверяем, похоже ли это на видео-файл (есть url, file, или stream)
-                // Обычно в торрентах ссылка лежит в item.url, в онлайн - тоже item.url или item.video
-                var url = item.url || (item.file ? item.file : null) || item.video;
+                // Переопределяем функцию
+                Lampa.ContextMenu.show = function (params) {
+                    try {
+                        var item = params.item || {};
+                        // Логируем для отладки (можно увидеть в консоли, если подключиться)
+                        // console.log('Downloader ContextMenu item:', item);
 
-                if (url && typeof url === 'string') {
-                    // Добавляем кнопку "Скачать"
-                    params.items.push({
-                        title: 'Скачать',
-                        icon: 'download', // Иконка из набора Lampa
-                        onSelect: function () {
-                            console.log('Downloader plugin:', 'Opening URL', url);
-                            
-                            // Пытаемся открыть ссылку системным методом
-                            // Это должно вызвать выбор приложения (браузер, ADM, VLC и т.д.)
-                            if (typeof Lampa.Android !== 'undefined' && Lampa.Android.open) {
-                                Lampa.Android.open(url);
-                            } else {
-                                window.open(url, '_blank');
-                            }
+                        var url = item.url || (item.file ? item.file : null) || item.video;
+
+                        if (url && typeof url === 'string') {
+                            params.items.push({
+                                title: 'Скачать',
+                                icon: 'download',
+                                onSelect: function () {
+                                    try {
+                                        console.log('Downloader plugin:', 'Opening URL', url);
+                                        if (typeof Lampa.Android !== 'undefined' && Lampa.Android.open) {
+                                            Lampa.Android.open(url);
+                                        } else {
+                                            window.open(url, '_blank');
+                                        }
+                                    } catch (e) {
+                                        Lampa.Noty.show('Download error: ' + e.message);
+                                    }
+                                }
+                            });
                         }
-                    });
-                }
-
-                // Вызываем оригинальную функцию с обновленным списком кнопок
-                original_show.apply(this, arguments);
-            };
+                    } catch (e) {
+                        console.error('Downloader plugin error in ContextMenu:', e);
+                    }
+                    
+                    // Вызываем оригинал
+                    original_show.apply(this, arguments);
+                };
+            } catch (e) {
+                Lampa.Noty.show('Plugin crash: ' + e.message);
+                console.error('Plugin crash:', e);
+            }
 
         } else {
-            console.log('Downloader plugin:', 'Lampa object not found, retrying...');
+            // console.log('Downloader plugin:', 'Lampa object not found, retrying...');
             setTimeout(startPlugin, 200);
         }
     }

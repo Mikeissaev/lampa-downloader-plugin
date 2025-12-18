@@ -2,10 +2,11 @@
     'use strict';
 
     function startPlugin() {
-        if (window.Lampa) {
+        // Проверяем наличие Lampa, ContextMenu и метода show
+        if (window.Lampa && Lampa.ContextMenu && Lampa.ContextMenu.show) {
             try {
-                console.log('Downloader plugin v1.2:', 'Loaded');
-                Lampa.Noty.show('Downloader plugin v1.2 loaded!');
+                console.log('Downloader plugin v1.3:', 'Loaded');
+                Lampa.Noty.show('Downloader plugin v1.3 loaded!');
 
                 // Сохраняем оригинальную функцию
                 var original_show = Lampa.ContextMenu.show;
@@ -14,9 +15,6 @@
                 Lampa.ContextMenu.show = function (params) {
                     try {
                         var item = params.item || {};
-                        // Логируем для отладки (можно увидеть в консоли, если подключиться)
-                        // console.log('Downloader ContextMenu item:', item);
-
                         var url = item.url || (item.file ? item.file : null) || item.video;
 
                         if (url && typeof url === 'string') {
@@ -25,7 +23,6 @@
                                 icon: 'download',
                                 onSelect: function () {
                                     try {
-                                        console.log('Downloader plugin:', 'Opening URL', url);
                                         if (typeof Lampa.Android !== 'undefined' && Lampa.Android.open) {
                                             Lampa.Android.open(url);
                                         } else {
@@ -41,16 +38,15 @@
                         console.error('Downloader plugin error in ContextMenu:', e);
                     }
                     
-                    // Вызываем оригинал
                     original_show.apply(this, arguments);
                 };
             } catch (e) {
                 Lampa.Noty.show('Plugin crash: ' + e.message);
-                console.error('Plugin crash:', e);
             }
 
         } else {
-            // console.log('Downloader plugin:', 'Lampa object not found, retrying...');
+            // Если что-то не готово, ждем
+            // console.log('Downloader plugin:', 'Waiting for Lampa & ContextMenu...');
             setTimeout(startPlugin, 200);
         }
     }

@@ -3,18 +3,44 @@
 
     function startPlugin() {
         if (window.Lampa) {
-            // Проверяем, что Lampa загрузилась
-            Lampa.Noty.show('Downloader plugin loaded successfully!');
-            console.log('Downloader plugin:', 'Loaded');
-            
-            // Добавляем настройки (опционально, для проверки интеграции)
-            Lampa.Settings.listener.follow('open', function (e) {
-                if (e.name == 'main') {
-                    console.log('Downloader plugin:', 'Settings opened');
+            console.log('Downloader plugin v1.1:', 'Loaded');
+            Lampa.Noty.show('Downloader plugin v1.1 loaded!');
+
+            // Сохраняем оригинальную функцию вызова контекстного меню
+            var original_show = Lampa.ContextMenu.show;
+
+            // Переопределяем функцию
+            Lampa.ContextMenu.show = function (params) {
+                var item = params.item || {};
+                
+                // Проверяем, похоже ли это на видео-файл (есть url, file, или stream)
+                // Обычно в торрентах ссылка лежит в item.url, в онлайн - тоже item.url или item.video
+                var url = item.url || (item.file ? item.file : null) || item.video;
+
+                if (url && typeof url === 'string') {
+                    // Добавляем кнопку "Скачать"
+                    params.items.push({
+                        title: 'Скачать',
+                        icon: 'download', // Иконка из набора Lampa
+                        onSelect: function () {
+                            console.log('Downloader plugin:', 'Opening URL', url);
+                            
+                            // Пытаемся открыть ссылку системным методом
+                            // Это должно вызвать выбор приложения (браузер, ADM, VLC и т.д.)
+                            if (typeof Lampa.Android !== 'undefined' && Lampa.Android.open) {
+                                Lampa.Android.open(url);
+                            } else {
+                                window.open(url, '_blank');
+                            }
+                        }
+                    });
                 }
-            });
+
+                // Вызываем оригинальную функцию с обновленным списком кнопок
+                original_show.apply(this, arguments);
+            };
+
         } else {
-            // Если Lampa еще не готова, пробуем позже
             console.log('Downloader plugin:', 'Lampa object not found, retrying...');
             setTimeout(startPlugin, 200);
         }
